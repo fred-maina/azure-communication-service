@@ -18,7 +18,7 @@ export const HARD_CODED_USERS: HardCodedUserDefinition[] = [
   },
   {
     id: 'assumpta',
-    displayName: 'Assumpta Wanmyama',
+    displayName: 'Assumpta Wanyama',
     accentColor: '#34D399',
     presence: 'online',
     externalId: '254736815546'
