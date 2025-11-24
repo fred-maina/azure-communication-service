@@ -39,6 +39,7 @@ export function useAiResponderBridge(
   { threadId, threadMode, currentUserAcsId, currentUserId, currentUserPhoneNumber }: AiBridgeOptions
 ) {
   const pendingRequests = useRef(new Set<string>())
+  const normalizedPhoneNumber = currentUserPhoneNumber ?? null
 
   useEffect(() => {
     if (!adapter || threadMode !== 'ai' || !threadId || !currentUserAcsId || !currentUserId) {
@@ -65,7 +66,7 @@ export function useAiResponderBridge(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           senderUserId: currentUserId,
-          phoneNumber: currentUserPhoneNumber ?? undefined,
+          phoneNumber: normalizedPhoneNumber ?? undefined,
           messageText: trimmed
         })
       }).catch((error) => {
@@ -78,5 +79,5 @@ export function useAiResponderBridge(
       adapter.off('messageSent', handler)
       trackedRequests.clear()
     }
-  }, [adapter, threadId, threadMode, currentUserAcsId, currentUserId, currentUserPhoneNumber])
+  }, [adapter, threadId, threadMode, currentUserAcsId, currentUserId, normalizedPhoneNumber])
 }
