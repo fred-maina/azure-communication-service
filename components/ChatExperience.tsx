@@ -352,39 +352,12 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
   const showAuthModal = authBootstrapped && !activeUserId
 
   return (
-    <>
-      <AuthModal open={showAuthModal} onSelectUser={handleProfileSelect} />
-      <div className="group fixed right-4 top-4 z-50 lg:right-8 lg:top-6">
-        <button
-          type="button"
-          aria-pressed={sidebarOpen}
-          aria-label={sidebarOpen ? 'Hide contacts panel' : 'Show contacts panel'}
-          onClick={toggleSidebar}
-          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-slate-100 shadow-xl backdrop-blur transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-100"
-          onMouseEnter={() => setSidebarOpen((current) => current)}
-        >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-            {sidebarOpen ? (
-              <path
-                d="M7 7l10 10M17 7l-10 10"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-              />
-            ) : (
-              <path
-                d="M5 7h14M5 12h14M5 17h14"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            )}
-          </svg>
-        </button>
-      </div>
+    <div>
+      <AuthModal open={showAuthModal} onSelectUser={handleProfileSelect} /> 
       <section className="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-6 lg:flex-row lg:gap-6">
         <SidebarPanel
           open={sidebarOpen}
+          toggleSidebar={toggleSidebar}
           activeProfile={activeUserProfile}
           contacts={contacts}
           focusedContactId={focusedContactId}
@@ -417,7 +390,7 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
           </div>
         </div>
       </section>
-    </>
+    </div>
   )
 }
 

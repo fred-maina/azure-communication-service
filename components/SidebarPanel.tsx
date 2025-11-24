@@ -22,6 +22,7 @@ type ActiveProfile = {
 
 type SidebarPanelProps = {
   open: boolean
+  toggleSidebar: () => void
   activeProfile: ActiveProfile
   contacts: ContactListItem[]
   focusedContactId: string | null
@@ -37,6 +38,7 @@ type SidebarPanelProps = {
 
 export default function SidebarPanel({
   open,
+  toggleSidebar,
   activeProfile,
   contacts,
   focusedContactId,
@@ -50,8 +52,36 @@ export default function SidebarPanel({
   onCloseMobile
 }: SidebarPanelProps) {
   return (
-    <>
-      <div
+    <div>
+      <div className="group fixed right-4 top-4 z-50 lg:right-8 lg:top-6">
+              <button
+                type="button"
+                aria-pressed={open}
+                aria-label={open ? 'Hide contacts panel' : 'Show contacts panel'}
+                onClick={toggleSidebar}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-slate-100 shadow-xl backdrop-blur transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-100"
+                onMouseEnter={toggleSidebar}
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+                  {open ? (
+                    <path
+                      d="M7 7l10 10M17 7l-10 10"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                    />
+                  ) : (
+                    <path
+                      d="M5 7h14M5 12h14M5 17h14"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  )}
+                </svg>
+              </button>
+            </div>
+        <div
         className={`fixed inset-0 z-30 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300 lg:hidden ${
           open ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
@@ -109,7 +139,7 @@ export default function SidebarPanel({
           />
         </div>
       </aside>
-    </>
+    </div>
   )
 }
 

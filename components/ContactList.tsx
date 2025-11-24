@@ -1,5 +1,5 @@
 import { PresenceStatus } from "@/lib/types/chat"
-import { formatTime, initials } from "@/lib/utils/uiHelpers"
+import { formatTime, initials, presenceColor } from "@/lib/utils/uiHelpers"
 
 export type ContactListItem = {
   id: string
