@@ -24,3 +24,30 @@ body {
   color: var(--foreground);
   min-height: 100vh;
 }
+
+.chat-panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.chat-panel > * {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.chat-panel > * > * {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.chat-panel [role='log'] {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}

@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { HARD_CODED_USERS } from '@/lib/constants/users'
 
-import { initials, presenceColor } from './uiHelpers'
+import { initials, presenceColor } from '../lib/utils/uiHelpers'
 
 type AuthModalProps = {
   open: boolean

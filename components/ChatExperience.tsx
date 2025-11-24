@@ -7,7 +7,9 @@ import type { AiAssistantProfile, AzureChatCredentials, ChatThreadMode, Presence
 
 import ConversationSurface from './ConversationSurface'
 import AuthModal from './AuthModal'
-import SidebarPanel, { type ContactListItem } from './SidebarPanel'
+import SidebarPanel from './SidebarPanel'
+import EmptyScreen from './EmptyScreen'
+import { ContactListItem } from './ContactList'
 
 const AUTH_STORAGE_KEY = 'mesh.dm.user'
 const ASSISTANT_ACCENT = '#F472B6'
@@ -352,35 +354,33 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
   return (
     <>
       <AuthModal open={showAuthModal} onSelectUser={handleProfileSelect} />
-      <div className="fixed right-4 top-4 z-50 flex items-center gap-3 lg:right-8 lg:top-6">
+      <div className="group fixed right-4 top-4 z-50 lg:right-8 lg:top-6">
         <button
           type="button"
           aria-pressed={sidebarOpen}
           aria-label={sidebarOpen ? 'Hide contacts panel' : 'Show contacts panel'}
           onClick={toggleSidebar}
           className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-slate-100 shadow-xl backdrop-blur transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-100"
+          onMouseEnter={() => setSidebarOpen((current) => current)}
         >
           <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
             {sidebarOpen ? (
-              <path d="M7 6h4v12H7zM13 6h4v12h-4z" fill="currentColor" opacity="0.9" />
+              <path
+                d="M7 7l10 10M17 7l-10 10"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+              />
             ) : (
               <path
-                d="M6 7h5v10H6zM13 7h5v10h-5z"
+                d="M5 7h14M5 12h14M5 17h14"
                 stroke="currentColor"
                 strokeWidth="1.5"
                 strokeLinecap="round"
-                strokeLinejoin="round"
               />
             )}
           </svg>
         </button>
-        <span
-          className={`hidden rounded-full bg-black/80 px-3 py-1 text-xs font-semibold text-white shadow-lg transition duration-200 lg:inline-flex ${
-            sidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-2 opacity-0'
-          }`}
-        >
-          {sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-        </span>
       </div>
       <section className="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-6 lg:flex-row lg:gap-6">
         <SidebarPanel
@@ -402,51 +402,24 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
         />
         <div className="flex min-h-[calc(100vh-4rem)] flex-1 flex-col gap-4 overflow-hidden rounded-3xl bg-slate-950/50 p-4 shadow-2xl ring-1 ring-slate-900/40 sm:p-6">
           {error ? <div className="rounded-2xl bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{error}</div> : null}
-          {activeThread && chatConfig && activeUserId ? (
-            <ConversationSurface
-              config={chatConfig}
-              threadId={activeThread.id}
-              mode={activeThread.mode}
-              userId={activeUserId}
-              phoneNumber={activeUserProfile?.externalId ?? null}
-            />
-          ) : (
-            <EmptyState loggedIn={Boolean(activeUserId)} loading={loadingThreads || loadingConfig} />
-          )}
+          <div className="flex flex-1 min-h-0">
+            {activeThread && chatConfig && activeUserId ? (
+              <ConversationSurface
+                config={chatConfig}
+                threadId={activeThread.id}
+                mode={activeThread.mode}
+                userId={activeUserId}
+                phoneNumber={activeUserProfile?.externalId ?? null}
+              />
+            ) : (
+              <EmptyScreen loggedIn={Boolean(activeUserId)} loading={loadingThreads || loadingConfig} />
+            )}
+          </div>
         </div>
       </section>
     </>
   )
 }
 
-type EmptyStateProps = {
-  loggedIn: boolean
-  loading: boolean
-}
 
-function EmptyState({ loggedIn, loading }: EmptyStateProps) {
-  if (!loggedIn) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800/70 text-center">
-        <p className="text-lg font-semibold text-white">Sign in to start chatting</p>
-        <p className="mt-2 text-sm text-slate-400">Use one of the pilot profiles to unlock the contact list.</p>
-      </div>
-    )
-  }
 
-  if (loading) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-slate-800/70 text-center text-slate-300">
-        <p className="text-base font-semibold">Preparing your conversation…</p>
-        <p className="text-sm text-slate-500">ACS chat adapter is initializing.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800/70 text-center text-slate-300">
-      <p className="text-base font-semibold">No thread selected</p>
-      <p className="mt-2 text-sm text-slate-500">Tap a contact or recent chat to open the message view.</p>
-    </div>
-  )
-}

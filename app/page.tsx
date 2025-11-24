@@ -1,4 +1,4 @@
-import ChatExperience from '@/components/chat-shell/ChatExperience'
+import ChatExperience from '@/components/ChatExperience'
 import { getAssistantProfile, listHumanUsers } from '@/lib/services/chatOrchestrator'
 import { serializeUser } from '@/lib/utils/serialization'
 
