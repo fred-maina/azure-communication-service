@@ -6,7 +6,7 @@ import {
   fromFlatCommunicationIdentifier,
   useAzureCommunicationChatAdapter
 } from '@azure/communication-react'
-import { AzureCommunicationTokenCredential } from '@azure/communication-common'
+import { AzureCommunicationTokenCredential, CommunicationUserIdentifier } from '@azure/communication-common'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useAiResponderBridge, useAutoReadReceipts } from '@/lib/hooks/chatInstrumentation'
@@ -34,7 +34,12 @@ export default function ConversationSurface({ config, threadId, mode, userId, ph
     [config, credential]
   )
 
-  const adapter = useAzureCommunicationChatAdapter(adapterArgs)
+  // const adapter = useAzureCommunicationChatAdapter(adapterArgs)
+  const adapter = useAzureCommunicationChatAdapter({
+  ...adapterArgs,
+  // Force TypeScript to treat this as a User Identifier
+  userId: adapterArgs.userId as CommunicationUserIdentifier
+})
 
   useAutoReadReceipts(adapter, config.userId)
   useAiResponderBridge(adapter, {

@@ -27,9 +27,9 @@ export function useAutoReadReceipts(adapter: Adapter | undefined, currentUserAcs
         .catch((error) => console.warn('Failed to send read receipt', error))
     }
 
-    adapter.on('messageReceived', handler)
+    (adapter as any).on('messageSent', handler)
     return () => {
-      adapter.off('messageReceived', handler)
+      (adapter as any).off('messageSent', handler)
     }
   }, [adapter, currentUserAcsId])
 }
@@ -74,9 +74,9 @@ export function useAiResponderBridge(
       })
     }
 
-    adapter.on('messageSent', handler)
+    (adapter as any).on('messageSent', handler)
     return () => {
-      adapter.off('messageSent', handler)
+      (adapter as any).off('messageSent', handler)
       trackedRequests.clear()
     }
   }, [adapter, threadId, threadMode, currentUserAcsId, currentUserId, normalizedPhoneNumber])
