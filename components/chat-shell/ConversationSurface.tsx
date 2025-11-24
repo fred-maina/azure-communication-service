@@ -64,7 +64,7 @@ export default function ConversationSurface({ config, threadId, mode, userId, ph
 
   return (
     <FluentThemeProvider>
-      <div className="h-full">
+      <div className="flex h-full flex-col">
         <ChatComposite
           adapter={adapter}
           formFactor={formFactor}

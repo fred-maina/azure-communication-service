@@ -6,6 +6,8 @@ import { HARD_CODED_USERS } from '@/lib/constants/users'
 import type { AiAssistantProfile, AzureChatCredentials, ChatThreadMode, PresenceStatus } from '@/lib/types/chat'
 
 import ConversationSurface from './ConversationSurface'
+import SidebarPanel, { type ContactListItem } from './SidebarPanel'
+import { initials, presenceColor } from './uiHelpers'
 
 const AUTH_STORAGE_KEY = 'mesh.dm.user'
 const ASSISTANT_ACCENT = '#F472B6'
@@ -39,20 +41,6 @@ type Props = {
   assistant: AiAssistantProfile
 }
 
-type ContactListItem = {
-  id: string
-  displayName: string
-  accentColor: string
-  presence: PresenceStatus
-  role: 'assistant' | 'human'
-  description?: string
-  disabled?: boolean
-  lastMessagePreview?: string
-  lastActivityAt?: string
-  unreadCount?: number
-  isSelf?: boolean
-}
-
 export default function ChatExperience({ initialUsers, assistant }: Props) {
   const [activeUserId, setActiveUserId] = useState<string | null>(null)
   const [threads, setThreads] = useState<SerializableThread[]>([])
@@ -63,6 +51,8 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [focusedContactId, setFocusedContactId] = useState<string | null>(null)
   const [authBootstrapped, setAuthBootstrapped] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isDesktopView, setIsDesktopView] = useState(false)
   const configCacheRef = useRef(new Map<string, { config: AzureChatCredentials; fetchedAt: number }>())
 
   const rememberConfig = useCallback((threadId: string, config: AzureChatCredentials) => {
@@ -86,6 +76,33 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
     }
     setAuthBootstrapped(true)
   }, [initialUsers])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mediaQuery = window.matchMedia('(min-width: 1024px)')
+    const syncSidebar = () => {
+      const desktop = mediaQuery.matches
+      setIsDesktopView(desktop)
+      if (desktop) {
+        setSidebarOpen((current) => (current ? current : true))
+      } else {
+        setSidebarOpen(false)
+      }
+    }
+    syncSidebar()
+    mediaQuery.addEventListener('change', syncSidebar)
+    return () => mediaQuery.removeEventListener('change', syncSidebar)
+  }, [])
+
+  const toggleSidebar = useCallback(() => {
+    setSidebarOpen((current) => !current)
+  }, [])
+
+  const closeSidebarOnMobile = useCallback(() => {
+    if (!isDesktopView) {
+      setSidebarOpen(false)
+    }
+  }, [isDesktopView])
 
   const handleThreadSelection = useCallback((threadId: string | null) => {
     setSelectedThreadId(threadId)
@@ -291,13 +308,14 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
           rememberConfig(payload.thread.id, payload.config)
         }
         handleThreadSelection(payload.thread.id)
+        closeSidebarOnMobile()
       } catch (err) {
         setFocusedContactId(null)
         setError(err instanceof Error ? err.message : 'Unable to start conversation')
         setLoadingThreads(false)
       }
     },
-    [activeUserId, handleThreadSelection, rememberConfig, upsertThread]
+    [activeUserId, closeSidebarOnMobile, handleThreadSelection, rememberConfig, upsertThread]
   )
 
   const handleSignOut = useCallback(() => {
@@ -334,42 +352,55 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
   return (
     <>
       <AuthModal open={showAuthModal} onSelectUser={handleProfileSelect} />
-      <section className="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-6 lg:flex-row lg:gap-6">
-        <aside className="w-full rounded-3xl bg-slate-950/60 p-4 backdrop-blur lg:w-80 lg:p-6">
-          <div className="rounded-2xl border border-slate-800/70 bg-slate-900/60 p-4">
-            {activeUserProfile ? (
-              <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400">Signed in as</p>
-                <p className="mt-1 text-lg font-semibold text-white">{activeUserProfile.displayName}</p>
-                <button
-                  className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-slate-500"
-                  onClick={handleSignOut}
-                >
-                  Switch profile
-                </button>
-              </div>
+      <div className="fixed right-4 top-4 z-50 flex items-center gap-3 lg:right-8 lg:top-6">
+        <button
+          type="button"
+          aria-pressed={sidebarOpen}
+          aria-label={sidebarOpen ? 'Hide contacts panel' : 'Show contacts panel'}
+          onClick={toggleSidebar}
+          className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-slate-100 shadow-xl backdrop-blur transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-100"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+            {sidebarOpen ? (
+              <path d="M7 6h4v12H7zM13 6h4v12h-4z" fill="currentColor" opacity="0.9" />
             ) : (
-              <div>
-                <p className="text-sm text-slate-300">Sign in to unlock your Mesh DMs.</p>
-                <p className="text-xs text-slate-500">Pick any of the four demo profiles from the modal.</p>
-              </div>
+              <path
+                d="M6 7h5v10H6zM13 7h5v10h-5z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             )}
-          </div>
-          <ContactList
-            contacts={contacts}
-            activeContactId={focusedContactId}
-            disabled={!activeUserId || loadingThreads}
-            onSelect={handleContactPress}
-            loading={loadingThreads}
-          />
-          <ThreadList
-            threads={threads}
-            loading={loadingThreads}
-            selectedThreadId={selectedThreadId}
-            onSelect={(threadId) => handleThreadSelection(threadId)}
-          />
-        </aside>
-        <div className="flex min-h-[75vh] flex-1 flex-col gap-4 rounded-3xl bg-slate-950/50 p-4 shadow-2xl ring-1 ring-slate-900/40 sm:p-6">
+          </svg>
+        </button>
+        <span
+          className={`hidden rounded-full bg-black/80 px-3 py-1 text-xs font-semibold text-white shadow-lg transition duration-200 lg:inline-flex ${
+            sidebarOpen ? 'translate-x-0 opacity-100' : 'translate-x-2 opacity-0'
+          }`}
+        >
+          {sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+        </span>
+      </div>
+      <section className="relative mx-auto flex min-h-screen max-w-6xl flex-col gap-4 px-4 py-6 lg:flex-row lg:gap-6">
+        <SidebarPanel
+          open={sidebarOpen}
+          activeProfile={activeUserProfile}
+          contacts={contacts}
+          focusedContactId={focusedContactId}
+          contactsDisabled={!activeUserId || loadingThreads}
+          loadingThreads={loadingThreads}
+          threads={threads}
+          selectedThreadId={selectedThreadId}
+          onContactPress={handleContactPress}
+          onThreadSelect={(threadId) => {
+            handleThreadSelection(threadId)
+            closeSidebarOnMobile()
+          }}
+          onSignOut={handleSignOut}
+          onCloseMobile={closeSidebarOnMobile}
+        />
+        <div className="flex min-h-[calc(100vh-4rem)] flex-1 flex-col gap-4 overflow-hidden rounded-3xl bg-slate-950/50 p-4 shadow-2xl ring-1 ring-slate-900/40 sm:p-6">
           {error ? <div className="rounded-2xl bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{error}</div> : null}
           {activeThread && chatConfig && activeUserId ? (
             <ConversationSurface
@@ -385,117 +416,6 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
         </div>
       </section>
     </>
-  )
-}
-
-type ContactListProps = {
-  contacts: ContactListItem[]
-  activeContactId: string | null
-  onSelect: (contactId: string, role: 'assistant' | 'human') => void
-  disabled: boolean
-  loading: boolean
-}
-
-function ContactList({ contacts, activeContactId, onSelect, disabled, loading }: ContactListProps) {
-  return (
-    <div className="mt-6">
-      <div className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500">
-        <span>Contacts</span>
-        {loading ? <span className="text-slate-400">Syncing…</span> : null}
-      </div>
-      <div className="mt-3 flex flex-col gap-3">
-        {contacts.map((contact) => {
-          const isActive = activeContactId === contact.id
-          return (
-            <button
-              key={contact.id}
-              disabled={disabled || contact.disabled}
-              onClick={() => onSelect(contact.id, contact.role)}
-              className={`flex items-center gap-3 rounded-2xl border px-3 py-3 text-left text-sm transition ${
-                isActive
-                  ? 'border-sky-500/60 bg-sky-500/10 text-white'
-                  : 'border-slate-800/70 bg-slate-900/60 text-slate-200 hover:border-slate-700'
-              } ${contact.disabled ? 'opacity-60' : ''}`}
-            >
-              <span
-                className="flex h-11 w-11 items-center justify-center rounded-2xl text-base font-semibold text-slate-950"
-                style={{ background: contact.accentColor }}
-              >
-                {initials(contact.displayName)}
-              </span>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold">
-                    {contact.displayName} {contact.isSelf ? <span className="ml-1 rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300">You</span> : null}
-                  </p>
-                  <div className="flex items-center gap-2">
-                    {contact.unreadCount ? (
-                      <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold text-emerald-200">{contact.unreadCount}</span>
-                    ) : null}
-                    {contact.lastActivityAt ? <span className="text-xs text-slate-400">{formatTime(contact.lastActivityAt)}</span> : null}
-                  </div>
-                </div>
-                <p className="text-xs text-slate-400">
-                  {contact.description ?? (contact.role === 'assistant' ? 'AI assistant' : 'Mesh member')}
-                  <span className="ml-2 inline-flex items-center gap-1 text-[11px] uppercase tracking-wide text-slate-500">
-                    <span className={`h-2 w-2 rounded-full ${presenceColor(contact.presence)}`} />
-                    {contact.presence}
-                  </span>
-                </p>
-                <p className="mt-1 line-clamp-1 text-xs text-slate-300">
-                  {contact.lastMessagePreview || (contact.role === 'assistant' ? 'Share what you are working on.' : 'Tap to start a DM.')}
-                </p>
-              </div>
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-type ThreadListProps = {
-  threads: SerializableThread[]
-  selectedThreadId: string | null
-  onSelect: (threadId: string) => void
-  loading: boolean
-}
-
-function ThreadList({ threads, selectedThreadId, onSelect, loading }: ThreadListProps) {
-  return (
-    <div className="mt-8">
-      <div className="flex items-center justify-between text-xs uppercase tracking-wide text-slate-500">
-        <span>Recents</span>
-        {loading ? <span className="text-slate-400">Connecting…</span> : null}
-      </div>
-      <div className="mt-3 space-y-2">
-        {threads.map((thread) => (
-          <button
-            key={thread.id}
-            onClick={() => onSelect(thread.id)}
-            className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition ${
-              selectedThreadId === thread.id
-                ? 'border-emerald-500/60 bg-emerald-500/10 text-white'
-                : 'border-slate-800/70 bg-slate-900/60 text-slate-200 hover:border-slate-700'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <p className="font-semibold">{thread.topic}</p>
-              <span className="text-xs text-slate-400">{formatTime(thread.lastActivityAt)}</span>
-            </div>
-            <p className="text-[11px] uppercase tracking-wide text-slate-500">
-              {thread.mode === 'ai' ? 'AI coaching' : 'Direct message'}
-            </p>
-            <p className="mt-1 line-clamp-2 text-xs text-slate-300">{thread.lastMessagePreview ?? 'No messages yet'}</p>
-          </button>
-        ))}
-        {!threads.length && !loading ? (
-          <div className="rounded-2xl border border-dashed border-slate-800/70 p-4 text-center text-xs text-slate-400">
-            Your chats will appear here once you message someone.
-          </div>
-        ) : null}
-      </div>
-    </div>
   )
 }
 
@@ -606,29 +526,4 @@ function AuthModal({ open, onSelectUser }: AuthModalProps) {
       </div>
     </div>
   )
-}
-
-function initials(name: string) {
-  return name
-    .split(' ')
-    .slice(0, 2)
-    .map((segment) => segment.charAt(0).toUpperCase())
-    .join('')
-}
-
-function formatTime(timestamp?: string) {
-  if (!timestamp) return ''
-  const date = new Date(timestamp)
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-}
-
-function presenceColor(status: PresenceStatus) {
-  switch (status) {
-    case 'online':
-      return 'bg-emerald-400'
-    case 'away':
-      return 'bg-amber-400'
-    default:
-      return 'bg-slate-500'
-  }
 }
