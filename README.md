@@ -86,9 +86,9 @@ lib/
 - `azureEnvironment.ts` centralizes ACS + Event Grid configuration so credentials are fetched once per runtime.
 
 ### Client Experience
-- `ChatExperience` handles the MVP login modal, contact directory, AI pin, recents list, and bootstraps ACS adapters once the user selects a thread.
+- `ChatExperience` orchestrates auth state, caching, and ACS adapter bootstrapping while delegating presentation to smaller components.
 - `ConversationSurface` wraps `ChatComposite`, forces a mobile form factor on small screens, and wires hooks for read receipts + AI bridge publishing.
-- `AuthModal`, `ContactList`, and `ThreadList` live in the same module to keep the Mesh.life-inspired layout co-located with state management.
+- `SidebarPanel` renders the floating contacts + recents drawer, and `AuthModal` hosts the persona picker / login modal.
 
 ## Development Tips
 - Ensure `NEXT_ACS_CONNECTION_STRING` is scoped to a resource with Chat privileges; each page load provisions ephemeral identities for the personas.
