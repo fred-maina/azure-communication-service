@@ -1,7 +1,12 @@
 "use client"
 
-import type { ChatAdapter } from '@azure/communication-react'
 import { useEffect, useRef } from 'react'
+import type { ChatAdapter, MessageSentListener } from '@azure/communication-react'
+import { getIdentifierRawId } from '@azure/communication-common'
+
+import { triggerAiResponder } from '@/lib/apiClient'
+
+type MessageSentEvent = Parameters<MessageSentListener>[0]
 
 type Adapter = Pick<ChatAdapter, 'on' | 'off' | 'sendReadReceipt'>
 
@@ -17,19 +22,19 @@ export function useAutoReadReceipts(adapter: Adapter | undefined, currentUserAcs
   useEffect(() => {
     if (!adapter || !adapter.sendReadReceipt || !currentUserAcsId) return
 
-    const handler = (event: { message?: { id?: string; sender?: { rawId?: string; communicationUserId?: string } } }) => {
+    const handler = (event: MessageSentEvent) => {
       const message = event.message
       if (!message?.id) return
-      const senderId = message.sender?.communicationUserId ?? message.sender?.rawId
+      const senderId = message.sender ? getIdentifierRawId(message.sender) : null
       if (senderId === currentUserAcsId) return
       adapter
         .sendReadReceipt?.(message.id)
         .catch((error) => console.warn('Failed to send read receipt', error))
     }
 
-    (adapter as any).on('messageSent', handler)
+    adapter.on('messageSent', handler)
     return () => {
-      (adapter as any).off('messageSent', handler)
+      adapter.off('messageSent', handler)
     }
   }, [adapter, currentUserAcsId])
 }
@@ -49,10 +54,10 @@ export function useAiResponderBridge(
 
     const trackedRequests = pendingRequests.current
 
-    const handler = (event: { message?: { id?: string; content?: { message?: string }; sender?: { rawId?: string; communicationUserId?: string } } }) => {
+    const handler = (event: MessageSentEvent) => {
       const message = event.message
       if (!message?.id) return
-      const senderId = message.sender?.communicationUserId ?? message.sender?.rawId
+      const senderId = message.sender ? getIdentifierRawId(message.sender) : null
       if (senderId && senderId !== currentUserAcsId) return
 
       if (trackedRequests.has(message.id)) return
@@ -61,22 +66,18 @@ export function useAiResponderBridge(
       if (!trimmed) return
       trackedRequests.add(message.id)
 
-      fetch('/api/ai/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderUserId: currentUserId,
-          phoneNumber: normalizedPhoneNumber ?? undefined,
-          messageText: trimmed
-        })
+      triggerAiResponder({
+        senderUserId: currentUserId,
+        phoneNumber: normalizedPhoneNumber ?? undefined,
+        messageText: trimmed
       }).catch((error) => {
         console.error('Failed to send AI response trigger', error)
       })
     }
 
-    (adapter as any).on('messageSent', handler)
+    adapter.on('messageSent', handler)
     return () => {
-      (adapter as any).off('messageSent', handler)
+      adapter.off('messageSent', handler)
       trackedRequests.clear()
     }
   }, [adapter, threadId, threadMode, currentUserAcsId, currentUserId, normalizedPhoneNumber])

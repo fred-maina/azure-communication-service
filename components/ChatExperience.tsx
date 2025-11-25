@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { HARD_CODED_USERS } from '@/lib/constants/users'
-import type { AiAssistantProfile, AzureChatCredentials, ChatThreadMode, PresenceStatus } from '@/lib/types/chat'
+import { type AiAssistantProfile, type AzureChatCredentials, type SerializableThread, type SerializableUser } from '@/lib/types/chat'
+import { createThread, getChatConfig, getUserThreads } from '@/lib/apiClient'
 
 import ConversationSurface from './ConversationSurface'
 import AuthModal from './AuthModal'
@@ -14,29 +15,6 @@ import { ContactListItem } from './ContactList'
 const AUTH_STORAGE_KEY = 'mesh.dm.user'
 const ASSISTANT_ACCENT = '#F472B6'
 const CHAT_CONFIG_CACHE_TTL_MS = 15 * 60 * 1000
-
-type SerializableUser = {
-  id: string
-  displayName: string
-  role: 'human' | 'assistant'
-  accentColor: string
-  externalId?: string
-  presence: PresenceStatus
-  createdAt: string
-  lastSeenAt: string
-}
-
-type SerializableThread = {
-  id: string
-  acsThreadId: string
-  mode: ChatThreadMode
-  topic: string
-  participantIds: string[]
-  createdAt: string
-  lastActivityAt: string
-  lastMessagePreview?: string
-  unreadCount?: number
-}
 
 type Props = {
   initialUsers: SerializableUser[]
@@ -137,28 +115,26 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
     setLoadingThreads(true)
     const controller = new AbortController()
 
-    fetch(`/api/users/${activeUserId}/threads`, { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error('Unable to load threads')
-        }
-        const payload = (await response.json()) as { threads: SerializableThread[] }
+    const loadThreads = async () => {
+      try {
+        const payload = await getUserThreads(activeUserId, controller.signal)
         setThreads(payload.threads)
         if (!payload.threads.length) {
           handleThreadSelection(null)
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         if (controller.signal.aborted) return
         setError(err instanceof Error ? err.message : 'Unable to load conversations')
         setThreads([])
         handleThreadSelection(null)
-      })
-      .finally(() => {
+      } finally {
         if (!controller.signal.aborted) {
           setLoadingThreads(false)
         }
-      })
+      }
+    }
+
+    loadThreads()
 
     return () => controller.abort()
   }, [activeUserId, handleThreadSelection])
@@ -176,31 +152,23 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
     const controller = new AbortController()
     const targetThreadId = selectedThreadId
 
-    fetch('/api/chat/config', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: activeUserId, threadId: targetThreadId }),
-      signal: controller.signal
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          const payload = await response.json().catch(() => null)
-          throw new Error(payload?.error ?? 'Unable to initialize chat adapter')
-        }
-        const payload = (await response.json()) as { config: AzureChatCredentials }
+    const fetchChatConfig = async () => {
+      try {
+        const payload = await getChatConfig(activeUserId, targetThreadId, controller.signal)
         rememberConfig(targetThreadId, payload.config)
         setChatConfig(payload.config)
-      })
-      .catch((err) => {
+      } catch (err) {
         if (controller.signal.aborted) return
         setError(err instanceof Error ? err.message : 'Unable to initialize chat adapter')
         setChatConfig(null)
-      })
-      .finally(() => {
+      } finally {
         if (!controller.signal.aborted) {
           setLoadingConfig(false)
         }
-      })
+      }
+    }
+
+    fetchChatConfig()
 
     return () => controller.abort()
   }, [activeUserId, selectedThreadId, rememberConfig])
@@ -291,20 +259,11 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
       setError(null)
       setLoadingThreads(true)
       try {
-        const response = await fetch('/api/threads', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(
-            role === 'assistant'
-              ? { initiatorId: activeUserId, mode: 'ai' }
-              : { initiatorId: activeUserId, peerId: contactId, mode: 'user' }
-          )
-        })
-        if (!response.ok) {
-          const payload = await response.json().catch(() => null)
-          throw new Error(payload?.error ?? 'Unable to start conversation')
-        }
-        const payload = (await response.json()) as { thread: SerializableThread; config?: AzureChatCredentials }
+        const payload = await createThread(
+          role === 'assistant'
+            ? { initiatorId: activeUserId, mode: 'ai' }
+            : { initiatorId: activeUserId, peerId: contactId, mode: 'user' }
+        )
         upsertThread(payload.thread)
         if (payload.config) {
           rememberConfig(payload.thread.id, payload.config)
@@ -367,7 +326,7 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
           onSignOut={handleSignOut}
           onCloseMobile={closeSidebarOnMobile}
         />
-        <div className="flex min-h-[calc(100vh-4rem)] flex-1 flex-col gap-4 overflow-hidden rounded-3xl bg-slate-950/50 p-4 shadow-2xl ring-1 ring-slate-900/40 sm:p-6">
+        <div className="flex min-h-100vh flex-1 flex-col overflow-hidden rounded-2xl bg-slate-950/50 p-4 shadow-2xl ring-1 ring-slate-900/40 sm:p-6">
           {error ? <div className="rounded-2xl bg-rose-500/10 px-4 py-3 text-sm text-rose-100">{error}</div> : null}
           <div className="flex flex-1 min-h-0">
             {activeThread && chatConfig && activeUserId ? (
@@ -387,6 +346,3 @@ export default function ChatExperience({ initialUsers, assistant }: Props) {
     </div>
   )
 }
-
-
-

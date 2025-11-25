@@ -66,9 +66,9 @@ export default function ConversationSurface({ config, threadId, mode, userId, ph
   }
 
   return (
-    <div className="h-[90vh] w-full overflow-hidden rounded-xl border border-slate-800 bg-white shadow-sm">
+    <div className="h-screen w-full overflow-hidden rounded-xl border border-slate-800shadow-sm">
       <FluentThemeProvider>
-        <div className="h-full w-full flex flex-col">
+       
             <ChatComposite
             adapter={adapter}
             formFactor={formFactor}
@@ -79,7 +79,7 @@ export default function ConversationSurface({ config, threadId, mode, userId, ph
                 richTextEditor: false
             }}
             />
-        </div>
+       
       </FluentThemeProvider>
     </div>
   )

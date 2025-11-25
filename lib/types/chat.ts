@@ -47,3 +47,26 @@ export interface AiAssistantProfile {
   persona: string
   acsIdentity?: string
 }
+
+export interface SerializableUser {
+  id: string
+  displayName: string
+  role: UserRole
+  accentColor: string
+  externalId?: string
+  presence: PresenceStatus
+  createdAt: string
+  lastSeenAt: string
+}
+
+export interface SerializableThread {
+  id: string
+  acsThreadId: string
+  mode: ChatThreadMode
+  topic: string
+  participantIds: string[]
+  createdAt: string
+  lastActivityAt: string
+  lastMessagePreview?: string
+  unreadCount?: number
+}
