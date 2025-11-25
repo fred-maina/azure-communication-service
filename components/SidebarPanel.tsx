@@ -1,19 +1,7 @@
 "use client"
 
-import type { ChatThreadMode } from '@/lib/types/chat'
-
-import { formatTime } from '../lib/utils/uiHelpers'
 import ContactList, { ContactListItem } from './ContactList'
 
-
-
-type SidebarThread = {
-  id: string
-  topic: string
-  mode: ChatThreadMode
-  lastActivityAt?: string
-  lastMessagePreview?: string
-}
 
 type ActiveProfile = {
   id: string
@@ -28,10 +16,7 @@ type SidebarPanelProps = {
   focusedContactId: string | null
   contactsDisabled: boolean
   loadingThreads: boolean
-  threads: SidebarThread[]
-  selectedThreadId: string | null
   onContactPress: (contactId: string, role: 'assistant' | 'human') => void
-  onThreadSelect: (threadId: string) => void
   onSignOut: () => void
   onCloseMobile: () => void
 }
@@ -44,10 +29,7 @@ export default function SidebarPanel({
   focusedContactId,
   contactsDisabled,
   loadingThreads,
-  threads,
-  selectedThreadId,
   onContactPress,
-  onThreadSelect,
   onSignOut,
   onCloseMobile
 }: SidebarPanelProps) {
@@ -131,64 +113,9 @@ export default function SidebarPanel({
             loading={loadingThreads}
             onSelect={onContactPress}
           />
-          <ThreadList
-            threads={threads}
-            selectedThreadId={selectedThreadId}
-            onSelect={onThreadSelect}
-            loading={loadingThreads}
-          />
         </div>
       </aside>
     </div>
   )
 }
 
-
-
-type ThreadListProps = {
-  threads: SidebarThread[]
-  selectedThreadId: string | null
-  onSelect: (threadId: string) => void
-  loading: boolean
-}
-
-function ThreadList({ threads, selectedThreadId, onSelect, loading }: ThreadListProps) {
-  return (
-    <div className="mt-10">
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.3em] text-slate-500">
-        <span>Recents</span>
-        {loading ? <span className="text-slate-400">Connecting…</span> : null}
-      </div>
-      <div className="mt-3 space-y-3">
-        {threads.map((thread) => {
-          const isActive = selectedThreadId === thread.id
-          return (
-            <button
-              key={thread.id}
-              onClick={() => onSelect(thread.id)}
-              className={`w-full rounded-[24px] border px-4 py-4 text-left text-sm transition ${
-                isActive
-                  ? 'border-emerald-400/40 bg-gradient-to-r from-emerald-500/20 via-slate-900/30 to-slate-950/60 text-white shadow-[0_10px_35px_rgba(16,185,129,0.35)]'
-                  : 'border-white/5 bg-slate-900/40 text-slate-200 shadow-[0_8px_30px_rgba(2,8,23,0.55)] hover:border-white/10 hover:bg-slate-900/60'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <p className="font-semibold text-white">{thread.topic}</p>
-                <span className="text-xs text-slate-400">{formatTime(thread.lastActivityAt)}</span>
-              </div>
-              <p className="mt-1 text-[11px] uppercase tracking-[0.25em] text-slate-500">
-                {thread.mode === 'ai' ? 'AI coaching' : 'Direct message'}
-              </p>
-              <p className="mt-1 line-clamp-2 text-xs text-slate-300">{thread.lastMessagePreview ?? 'No messages yet'}</p>
-            </button>
-          )
-        })}
-        {!threads.length && !loading ? (
-          <div className="rounded-[24px] border border-dashed border-white/10 px-4 py-6 text-center text-xs text-slate-400">
-            Your chats will appear here once you message someone.
-          </div>
-        ) : null}
-      </div>
-    </div>
-  )
-}
