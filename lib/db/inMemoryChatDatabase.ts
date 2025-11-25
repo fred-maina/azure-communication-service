@@ -15,6 +15,7 @@ const humanSeed: ChatUser[] = HARD_CODED_USERS.map((user) => ({
   role: 'human',
   accentColor: user.accentColor,
   externalId: user.externalId,
+  acsIdentity: user.acsIdentity,
   presence: user.presence,
   createdAt: now(),
   lastSeenAt: now()
