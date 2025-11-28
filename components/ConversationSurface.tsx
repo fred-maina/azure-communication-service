@@ -11,6 +11,7 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { useAiResponderBridge, useAutoReadReceipts } from '@/lib/hooks/chatInstrumentation'
 import type { AzureChatCredentials, ChatThreadMode } from '@/lib/types/chat'
+import WaveLoader from './WaveLoader'
 
 type Props = {
   config: AzureChatCredentials
@@ -62,7 +63,15 @@ export default function ConversationSurface({ config, threadId, mode, userId, ph
   }, [])
 
   if (!adapter) {
-    return <div className="rounded-xl bg-slate-900/60 p-6 text-sm text-slate-300">Connecting to Azure Communication Services…</div>
+    return (
+      <div className="flex flex-1 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/60 p-6 text-slate-200">
+        <div className="text-center">
+          <WaveLoader className="mx-auto mb-4" />
+          <p className="text-sm font-semibold">Connecting to Azure Communication Services…</p>
+          <p className="text-xs text-slate-500">Hang tight while we initialize your chat adapter.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
