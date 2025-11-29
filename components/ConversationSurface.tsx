@@ -73,19 +73,17 @@ export default function ConversationSurface({ config, threadId, mode, userId, ph
   }
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-slate-800 shadow-sm">
       <FluentThemeProvider>
-        <ChatComposite
-          adapter={adapter}
-          formFactor={formFactor}
-          options={{
-            autoFocus: 'sendBoxTextField',
-            participantPane: false,
-            topic: true,
-            richTextEditor: false
-          }}
-        />
+          <ChatComposite
+            adapter={adapter}
+            formFactor={formFactor}
+            options={{
+              autoFocus: 'sendBoxTextField',
+              participantPane: false,
+              topic: true,
+              richTextEditor: false
+            }}
+          />
       </FluentThemeProvider>
-    </div>
   )
 }
