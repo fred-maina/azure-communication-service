@@ -86,6 +86,15 @@ export default function ConversationSurface({
       return defaultOnRender(messageProps)
     }
 
+    const chatMessage = message as typeof message & { metadata?: Record<string, string> }
+    const metadata = chatMessage.metadata ?? {}
+    const botContentType = metadata['microsoft.azure.communication.chat.bot.contenttype']
+    const isAdaptiveCard = typeof botContentType === 'string' && botContentType === 'azurebotservice.adaptivecard'
+
+    if (isAdaptiveCard) {
+      return defaultOnRender(messageProps)
+    }
+
     const content = message.content ?? ''
     const isOwn = Boolean(message.mine)
     const timestampLabel = message.createdOn?.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
